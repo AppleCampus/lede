@@ -1,0 +1,96 @@
+name: XGPv3 Build
+
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: '0 18 * * 4'   # 周五北京时间 02:00，需要时再开
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      TZ: Asia/Shanghai
+      FORCE_UNSAFE_CONFIGURE: 1
+    steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 10240
+          swap-size-mb: 2048
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+
+      - name: Checkout LEDE fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          path: lede
+
+      - name: Install build deps
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison \
+            build-essential bzip2 ccache clang cmake cpio curl device-tree-compiler flex gawk \
+            gcc-multilib g++-multilib gettext genisoimage git gperf haveged help2man intltool \
+            libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev \
+            libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev libreadline-dev libssl-dev \
+            libtool llvm lrzsz msmtp ninja-build p7zip p7zip-full patch pkgconf python3 \
+            python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion \
+            swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev uuid-runtime
+
+      - name: Cache dl / staging
+        uses: actions/cache@v4
+        with:
+          path: |
+            lede/dl
+            lede/staging_dir/host
+            lede/staging_dir/hostpkg
+            lede/staging_dir/toolchain-*
+          key: xgp-${{ runner.os }}-${{ hashFiles('lede/feeds.conf.default', 'lede/xgp.config') }}
+
+      - name: Prepare feeds / packages / files
+        working-directory: lede
+        run: |
+          set -e
+          bash scripts/xgp-prepare.sh
+
+      - name: Build
+        working-directory: lede
+        run: |
+          set -e
+          bash scripts/xgp-build.sh
+
+      - name: Collect artifacts
+        run: |
+          set -e
+          mkdir -p release_assets
+          cp lede/bin/targets/rockchip/armv8/*.img.gz release_assets/ || true
+          cp lede/bin/targets/rockchip/armv8/*.manifest release_assets/ || true
+          cp lede/bin/targets/rockchip/armv8/config.buildinfo release_assets/ || true
+          cp lede/bin/targets/rockchip/armv8/feeds.buildinfo release_assets/ || true
+          cp lede/bin/targets/rockchip/armv8/version.buildinfo release_assets/ || true
+          cp lede/bin/targets/rockchip/armv8/sha256sums release_assets/ || true
+          ls -lah release_assets
+          test -n "$(ls release_assets/*.img.gz 2>/dev/null)"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xgpv3-firmware
+          path: release_assets/
+          if-no-files-found: error
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: xgp-${{ github.run_number }}-${{ github.run_id }}
+          name: XGPv3 ${{ github.run_number }} (${{ github.sha }})
+          files: release_assets/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
