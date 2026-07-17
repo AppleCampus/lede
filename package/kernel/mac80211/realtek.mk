@@ -130,7 +130,7 @@ define KernelPackage/rtl8192d-common
   $(call KernelPackage/mac80211/Default)
   TITLE:=Realtek RTL8192DE common support module
   DEPENDS+= +kmod-rtlwifi
-  FILES:= $(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtlwifi/rtl8192de/rtl8192d-common.ko
+  FILES:= $(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtlwifi/rtl8192d/rtl8192d-common.ko
   HIDDEN:=1
 endef
 
