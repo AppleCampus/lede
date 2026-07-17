@@ -53,4 +53,11 @@ if ! grep -q 'CONFIG_TARGET_rockchip_armv8_DEVICE_nlnet_xiguapi-v3=y' xgp.config
   exit 1
 fi
 
+# 6.12+ panfrost 需要 drm_shmem_helper
+if grep -q 'CONFIG_PACKAGE_kmod-drm-panfrost=y' xgp.config; then
+  if ! grep -q 'CONFIG_PACKAGE_kmod-drm-shmem-helper=y' xgp.config; then
+    echo 'CONFIG_PACKAGE_kmod-drm-shmem-helper=y' >> xgp.config
+  fi
+fi
+
 echo "prepare done"
