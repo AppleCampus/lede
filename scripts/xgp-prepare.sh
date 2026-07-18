@@ -26,6 +26,7 @@ clone_or_pull() {
 }
 
 clone_or_pull https://github.com/jerrykuku/luci-app-argon-config.git package/zz/luci-app-argon-config
+clone_or_pull https://github.com/animegasan/luci-app-alpha-config.git package/zz/luci-app-alpha-config
 clone_or_pull https://github.com/derisamedia/luci-theme-alpha.git package/zz/luci-theme-alpha
 clone_or_pull https://github.com/zzzz0317/kmod-fb-tft-gc9307.git package/zz/kmod-fb-tft-gc9307
 clone_or_pull https://github.com/zzzz0317/xgp-v3-screen.git package/zz/xgp-v3-screen
