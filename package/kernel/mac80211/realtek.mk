@@ -2,9 +2,9 @@ PKG_DRIVERS += \
 	rtlwifi rtlwifi-pci rtlwifi-btcoexist rtlwifi-usb rtl8192c-common \
 	rtl8192ce rtl8192se rtl8192d-common rtl8192de rtl8192cu rtl8723-common rtl8723be rtl8723bs rtl8821ae \
 	rtl8xxxu rtw88 rtw88-pci rtw88-usb rtw88-sdio rtw88-8821c rtw88-8822b rtw88-8822c \
-	rtw88-8723d rtw88-8821ce rtw88-8821cu rtw88-8822be rtw88-8822bu \
+	rtw88-8723x rtw88-8723d rtw88-8821ce rtw88-8821cu rtw88-8822be rtw88-8822bu \
 	rtw88-8822ce rtw88-8822cu rtw88-8723de rtw88-8723ds rtw88-8723du \
-	rtw89 rtw89-pci rtw89-8851be rtw89-8852ae rtw89-8852be rtw89-8852ce
+	rtw89 rtw89-pci rtw89-8852b-common rtw89-8851be rtw89-8852ae rtw89-8852be rtw89-8852ce
 
 config-$(call config_package,rtlwifi) += RTL_CARDS RTLWIFI
 config-$(call config_package,rtlwifi-pci) += RTLWIFI_PCI
@@ -269,10 +269,18 @@ define KernelPackage/rtw88-8822c
   HIDDEN:=1
 endef
 
+define KernelPackage/rtw88-8723x
+  $(call KernelPackage/mac80211/Default)
+  TITLE:=Realtek RTL8723D common support
+  DEPENDS+= +kmod-rtw88
+  FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtw88/rtw88_8723x.ko
+  HIDDEN:=1
+endef
+
 define KernelPackage/rtw88-8723d
   $(call KernelPackage/mac80211/Default)
   TITLE:=Realtek RTL8723D family support
-  DEPENDS+= +kmod-rtw88 +rtl8723de-firmware
+  DEPENDS+= +kmod-rtw88 +kmod-rtw88-8723x +rtl8723de-firmware
   FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtw88/rtw88_8723d.ko
   AUTOLOAD:=$(call AutoProbe,rtw88_8723d)
   HIDDEN:=1
@@ -420,6 +428,14 @@ define KernelPackage/rtw89-pci
   HIDDEN:=1
 endef
 
+define KernelPackage/rtw89-8852b-common
+  $(call KernelPackage/mac80211/Default)
+  TITLE:=Realtek RTL8852B common support
+  DEPENDS+= +kmod-rtw89
+  FILES:=$(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtw89/rtw89_8852b_common.ko
+  HIDDEN:=1
+endef
+
 define KernelPackage/rtw89-8851be
   $(call KernelPackage/mac80211/Default)
   TITLE:=Realtek RTL8851BE support
@@ -443,7 +459,7 @@ endef
 define KernelPackage/rtw89-8852be
   $(call KernelPackage/mac80211/Default)
   TITLE:=Realtek RTL8852BE support
-  DEPENDS+= +kmod-rtw89-pci +rtl8852be-firmware
+  DEPENDS+= +kmod-rtw89-pci +kmod-rtw89-8852b-common +rtl8852be-firmware
   FILES:= \
 	$(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtw89/rtw89_8852b.ko \
 	$(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtw89/rtw89_8852be.ko
@@ -453,7 +469,7 @@ endef
 define KernelPackage/rtw89-8852ce
   $(call KernelPackage/mac80211/Default)
   TITLE:=Realtek RTL8852CE support
-  DEPENDS+= +kmod-rtw89-pci +rtl8852ce-firmware
+  DEPENDS+= +kmod-rtw89-pci +kmod-rtw89-8852b-common +rtl8852ce-firmware
   FILES:= \
 	$(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtw89/rtw89_8852c.ko \
 	$(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtw89/rtw89_8852ce.ko
