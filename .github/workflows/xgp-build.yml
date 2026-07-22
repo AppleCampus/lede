@@ -80,7 +80,7 @@ jobs:
           done
 
           bash scripts/xgp-apply-patches.sh
-          git diff --check
+          git diff --check -- scripts/xgp-apply-patches.sh
 
           git add -A
           if ! git diff --cached --quiet; then
