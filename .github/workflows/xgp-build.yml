@@ -2,8 +2,8 @@ name: XGPv3 Build
 
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron: '0 18 * * 4'   # 周五北京时间 02:00，需要时再开
+  schedule:
+    - cron: '0 18 * * 4'
 
 permissions:
   contents: write
@@ -14,11 +14,12 @@ jobs:
     env:
       TZ: Asia/Shanghai
       FORCE_UNSAFE_CONFIGURE: 1
+      UPSTREAM_REPO: https://github.com/coolsnowwolf/lede.git
+      UPSTREAM_BRANCH: master
     steps:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
-          # 给编译盘尽量多空间；root 只留 4G 系统
           root-reserve-mb: 4096
           swap-size-mb: 4096
           remove-dotnet: 'true'
@@ -39,14 +40,33 @@ jobs:
       - name: Checkout LEDE fork
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
           path: lede
+
+      - name: Sync latest upstream source
+        working-directory: lede
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream "$UPSTREAM_REPO"
+          git fetch upstream "$UPSTREAM_BRANCH" --depth=1
+          git merge --no-edit --no-ff "upstream/$UPSTREAM_BRANCH" -m "Sync upstream LEDE $GITHUB_RUN_ID" || {
+            echo "Upstream merge conflicted; keep AppleCampus XGP customizations."
+            git checkout --ours .
+            git add -A
+            git -c core.editor=true commit --no-edit
+          }
+          git push origin HEAD:master
+          echo "SYNCED_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "UPSTREAM_SHA=$(git rev-parse "upstream/$UPSTREAM_BRANCH")" >> "$GITHUB_ENV"
+          echo "Synced source commit: $(git rev-parse HEAD)"
+          echo "Upstream source: $(git rev-parse "upstream/$UPSTREAM_BRANCH")"
 
       - name: Install build deps (minimal, no texlive)
         run: |
           set -e
           sudo apt-get update -y
-          # 不要装 asciidoc/xmlto/texinfo 全量文档链，会拖进 texlive 把盘撑爆
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             build-essential clang flex bison g++ gawk \
             gcc-multilib g++-multilib gettext git \
@@ -91,14 +111,27 @@ jobs:
         run: |
           set -e
           mkdir -p release_assets
-          cp lede/bin/targets/rockchip/armv8/*.img.gz release_assets/ || true
+          cp lede/bin/targets/rockchip/armv8/*.img.gz release_assets/
           cp lede/bin/targets/rockchip/armv8/*.manifest release_assets/ || true
           cp lede/bin/targets/rockchip/armv8/config.buildinfo release_assets/ || true
           cp lede/bin/targets/rockchip/armv8/feeds.buildinfo release_assets/ || true
           cp lede/bin/targets/rockchip/armv8/version.buildinfo release_assets/ || true
           cp lede/bin/targets/rockchip/armv8/sha256sums release_assets/ || true
+          cp lede/.config release_assets/xgp.config.final
+          cp lede/feeds.conf release_assets/feeds.conf.final
+          cp lede/README.md release_assets/LEDE-README.md || true
+          cp lede/LICENSE release_assets/LEDE-LICENSE || true
+          curl -fsSL https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt \
+            -o release_assets/GPL-2.0.txt
+          test -s release_assets/GPL-2.0.txt
+          printf 'AppleCampus/lede commit: %s\nUpstream source: %s\nBuild run: %s\n' \
+            "$SYNCED_SHA" \
+            "$UPSTREAM_REPO@$UPSTREAM_SHA" \
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            > release_assets/SOURCE-OFFER.txt
+          sha256sum release_assets/*.img.gz > release_assets/sha256sums.release
           ls -lah release_assets
-          test -n "$(ls release_assets/*.img.gz 2>/dev/null)"
+          test -n "$(ls release_assets/*.img.gz)"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -111,7 +144,17 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: xgp-${{ github.run_number }}-${{ github.run_id }}
-          name: XGPv3 ${{ github.run_number }} (${{ github.sha }})
+          target_commitish: ${{ env.SYNCED_SHA }}
+          name: XGPv3 ${{ github.run_number }} (${{ env.SYNCED_SHA }})
+          body: |
+            ## XGP V3 firmware
+
+            Built from AppleCampus/lede commit `${{ env.SYNCED_SHA }}` after syncing upstream commit `${{ env.UPSTREAM_SHA }}`.
+
+            Includes XGP V3 screen support and the full Wi-Fi driver set, including MT7922 firmware support.
+
+            License: GNU General Public License v2.0 (GPL-2.0).
+            The release includes the complete `GPL-2.0.txt`, source/config metadata, and checksums.
           files: release_assets/*
           generate_release_notes: true
         env:
