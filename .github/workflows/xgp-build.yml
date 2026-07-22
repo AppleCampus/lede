@@ -59,7 +59,7 @@ jobs:
             xgp.config \
             scripts/xgp-prepare.sh \
             scripts/xgp-build.sh \
-            package/kernel/mac80211/realtek.mk; do
+            scripts/xgp-apply-patches.sh; do
             mkdir -p "$custom_dir/$(dirname "$path")"
             cp "$path" "$custom_dir/$path"
           done
@@ -74,10 +74,13 @@ jobs:
             xgp.config \
             scripts/xgp-prepare.sh \
             scripts/xgp-build.sh \
-            package/kernel/mac80211/realtek.mk; do
+            scripts/xgp-apply-patches.sh; do
             mkdir -p "$(dirname "$path")"
             cp "$custom_dir/$path" "$path"
           done
+
+          bash scripts/xgp-apply-patches.sh
+          git diff --check
 
           git add -A
           if ! git diff --cached --quiet; then
