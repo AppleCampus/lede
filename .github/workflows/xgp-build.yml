@@ -49,19 +49,45 @@ jobs:
           set -e
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git remote add upstream "$UPSTREAM_REPO"
-          git fetch upstream "$UPSTREAM_BRANCH" --depth=1
-          git merge --no-edit --no-ff "upstream/$UPSTREAM_BRANCH" -m "Sync upstream LEDE $GITHUB_RUN_ID" || {
-            echo "Upstream merge conflicted; keep AppleCampus XGP customizations."
-            git checkout --ours .
-            git add -A
-            git -c core.editor=true commit --no-edit
-          }
+          custom_dir=/tmp/xgp-custom
+          upstream_dir=/tmp/lede-upstream
+          rm -rf "$custom_dir" "$upstream_dir"
+
+          for path in \
+            .github/workflows/xgp-build.yml \
+            feeds.conf.default \
+            xgp.config \
+            scripts/xgp-prepare.sh \
+            scripts/xgp-build.sh \
+            package/kernel/mac80211/realtek.mk; do
+            mkdir -p "$custom_dir/$(dirname "$path")"
+            cp "$path" "$custom_dir/$path"
+          done
+
+          git clone --depth 1 --branch "$UPSTREAM_BRANCH" "$UPSTREAM_REPO" "$upstream_dir"
+          UPSTREAM_SHA=$(git -C "$upstream_dir" rev-parse HEAD)
+          rsync -a --delete --exclude='.git/' "$upstream_dir/" ./
+
+          for path in \
+            .github/workflows/xgp-build.yml \
+            feeds.conf.default \
+            xgp.config \
+            scripts/xgp-prepare.sh \
+            scripts/xgp-build.sh \
+            package/kernel/mac80211/realtek.mk; do
+            mkdir -p "$(dirname "$path")"
+            cp "$custom_dir/$path" "$path"
+          done
+
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Sync upstream LEDE $UPSTREAM_SHA"
+          fi
           git push origin HEAD:master
           echo "SYNCED_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-          echo "UPSTREAM_SHA=$(git rev-parse "upstream/$UPSTREAM_BRANCH")" >> "$GITHUB_ENV"
+          echo "UPSTREAM_SHA=$UPSTREAM_SHA" >> "$GITHUB_ENV"
           echo "Synced source commit: $(git rev-parse HEAD)"
-          echo "Upstream source: $(git rev-parse "upstream/$UPSTREAM_BRANCH")"
+          echo "Upstream source: $UPSTREAM_SHA"
 
       - name: Install build deps (minimal, no texlive)
         run: |
