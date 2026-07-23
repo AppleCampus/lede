@@ -26,6 +26,23 @@ else
   echo "Applied XGP panfrost dependency patch."
 fi
 
+rtl8192de_block() {
+  sed -n '/^define KernelPackage\/rtl8192de$/,/^endef$/p' "$realtek_file"
+}
+
+block=$(rtl8192de_block)
+if [[ -z "$block" ]]; then
+  echo "ERROR: upstream rtl8192de package definition is missing; patch needs review." >&2
+  exit 1
+elif grep -Eq 'DEPENDS.*\+kmod-rtl8192d-common' <<<"$block"; then
+  echo "RTL8192DE common-module dependency is already present upstream."
+else
+  sed -i '/^define KernelPackage\/rtl8192de$/a\  DEPENDS+= +kmod-rtl8192d-common' "$realtek_file"
+  block=$(rtl8192de_block)
+  grep -Eq 'DEPENDS.*\+kmod-rtl8192d-common' <<<"$block"
+  echo "Applied XGP RTL8192DE common-module dependency patch."
+fi
+
 if ! grep -q '^define KernelPackage/rtl8192d-common$' "$realtek_file"; then
   cat >>"$realtek_file" <<'EOF'
 
