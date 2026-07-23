@@ -129,28 +129,35 @@ jobs:
           bash scripts/xgp-prepare.sh
           df -h
 
-      - name: Preflight mac80211 build command
+      - name: Preflight mac80211 package wiring
         working-directory: lede
         run: |
           set -euo pipefail
+          mac80211_file=package/kernel/mac80211/Makefile
+          realtek_file=package/kernel/mac80211/realtek.mk
+
+          test -f "$mac80211_file"
+          test -f "$realtek_file"
           make defconfig
-          dry_run=$(mktemp)
-          trap 'rm -f "$dry_run"' EXIT
-          if ! make -n package/kernel/mac80211/compile V=s >"$dry_run" 2>&1; then
-            cat "$dry_run"
+
+          if ! grep -Fq 'KLIB_BUILD="$(LINUX_DIR)"' "$mac80211_file"; then
+            echo 'ERROR: mac80211 Makefile no longer wires KLIB_BUILD to the target kernel.' >&2
             exit 1
           fi
-          if ! grep -Fq 'KLIB_BUILD=' "$dry_run"; then
-            echo 'ERROR: mac80211 dry-run does not pass KLIB_BUILD to backports.' >&2
-            cat "$dry_run"
+
+          if ! grep -Fq '$(eval $(foreach drv,$(PKG_DRIVERS),$(call KernelPackage,$(drv))))' "$mac80211_file"; then
+            echo 'ERROR: mac80211 Makefile no longer has the unified driver registration pass.' >&2
             exit 1
           fi
-          if grep -Eq '/usr/src/linux-headers-[^[:space:]]+' "$dry_run"; then
-            echo 'ERROR: mac80211 dry-run still references host kernel headers.' >&2
-            cat "$dry_run"
+
+          if grep -Eq '^\s*\$\(eval \$\(call KernelPackage,(rtl8192d-common|rtw88-8723x|rtw89-8852b-common)\)\)' "$realtek_file"; then
+            echo 'ERROR: XGP compatibility drivers are being registered before MAKE_OPTS is defined.' >&2
             exit 1
           fi
-          echo 'mac80211 dry-run contains target KLIB_BUILD and no host header fallback.'
+
+          grep -Fq 'PKG_DRIVERS += rtl8192d-common rtw88-8723x rtw89-8852b-common' "$realtek_file"
+          grep -Fq 'rtlwifi/rtl8192d/rtl8192d-common.ko' "$realtek_file"
+          echo 'mac80211 package wiring is valid; no compile recipe was executed during preflight.'
 
       - name: Build
         working-directory: lede
