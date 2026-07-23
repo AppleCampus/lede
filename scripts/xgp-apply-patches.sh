@@ -3,9 +3,11 @@ set -euo pipefail
 
 video_file=package/kernel/linux/modules/video.mk
 realtek_file=package/kernel/mac80211/realtek.mk
+mac80211_file=package/kernel/mac80211/Makefile
 
 test -f "$video_file"
 test -f "$realtek_file"
+test -f "$mac80211_file"
 
 panfrost_block() {
   sed -n '/^define KernelPackage\/drm-panfrost$/,/^endef$/p' "$video_file"
@@ -38,7 +40,6 @@ define KernelPackage/rtl8192d-common
   FILES:= $(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtlwifi/rtl8192d/rtl8192d-common.ko
   HIDDEN:=1
 endef
-$(eval $(call KernelPackage,rtl8192d-common))
 
 define KernelPackage/rtw88-8723x
   $(call KernelPackage/mac80211/Default)
@@ -47,7 +48,6 @@ define KernelPackage/rtw88-8723x
   FILES:= $(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtw88/rtw88_8723x.ko
   HIDDEN:=1
 endef
-$(eval $(call KernelPackage,rtw88-8723x))
 
 define KernelPackage/rtw89-8852b-common
   $(call KernelPackage/mac80211/Default)
@@ -56,7 +56,6 @@ define KernelPackage/rtw89-8852b-common
   FILES:= $(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtw89/rtw89_8852b_common.ko
   HIDDEN:=1
 endef
-$(eval $(call KernelPackage,rtw89-8852b-common))
 EOF
   echo "Applied XGP legacy Realtek package overlay."
 else
@@ -66,3 +65,5 @@ fi
 grep -q '^define KernelPackage/rtl8192d-common$' "$realtek_file"
 grep -q '^define KernelPackage/rtw88-8723x$' "$realtek_file"
 grep -q '^define KernelPackage/rtw89-8852b-common$' "$realtek_file"
+grep -Fq 'KLIB_BUILD="$(LINUX_DIR)"' "$mac80211_file"
+grep -Fq '$(eval $(foreach drv,$(PKG_DRIVERS),$(call KernelPackage,$(drv))))' "$mac80211_file"
