@@ -262,6 +262,7 @@ define KernelPackage/rtw88-8822c
 endef
 
 define KernelPackage/rtw88-8723d
+  DEPENDS+= +kmod-rtw88-8723x
   $(call KernelPackage/mac80211/Default)
   TITLE:=Realtek RTL8723D family support
   DEPENDS+= +kmod-rtw88 +rtl8723de-firmware
@@ -433,6 +434,7 @@ define KernelPackage/rtw89-8852ae
 endef
 
 define KernelPackage/rtw89-8852be
+  DEPENDS+= +kmod-rtw89-8852b-common
   $(call KernelPackage/mac80211/Default)
   TITLE:=Realtek RTL8852BE support
   DEPENDS+= +kmod-rtw89-pci +rtl8852be-firmware
