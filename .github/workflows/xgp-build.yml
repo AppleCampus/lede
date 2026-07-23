@@ -168,6 +168,26 @@ jobs:
             exit 1
           fi
 
+          rtw88_8723d_block=$(sed -n '/^define KernelPackage\/rtw88-8723d$/,/^endef$/p' "$realtek_file")
+          if [[ -z "$rtw88_8723d_block" ]]; then
+            echo 'ERROR: rtw88-8723d package definition is missing.' >&2
+            exit 1
+          fi
+          if ! grep -Eq 'DEPENDS.*\+kmod-rtw88-8723x' <<<"$rtw88_8723d_block"; then
+            echo 'ERROR: rtw88-8723d does not declare its rtw88-8723x module dependency.' >&2
+            exit 1
+          fi
+
+          rtw89_8852be_block=$(sed -n '/^define KernelPackage\/rtw89-8852be$/,/^endef$/p' "$realtek_file")
+          if [[ -z "$rtw89_8852be_block" ]]; then
+            echo 'ERROR: rtw89-8852be package definition is missing.' >&2
+            exit 1
+          fi
+          if ! grep -Eq 'DEPENDS.*\+kmod-rtw89-8852b-common' <<<"$rtw89_8852be_block"; then
+            echo 'ERROR: rtw89-8852be does not declare its 8852b common-module dependency.' >&2
+            exit 1
+          fi
+
           echo 'mac80211 package wiring is valid; no compile recipe was executed during preflight.'
 
       - name: Build
