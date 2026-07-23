@@ -462,7 +462,6 @@ define KernelPackage/rtl8192d-common
   FILES:= $(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtlwifi/rtl8192d/rtl8192d-common.ko
   HIDDEN:=1
 endef
-$(eval $(call KernelPackage,rtl8192d-common))
 
 define KernelPackage/rtw88-8723x
   $(call KernelPackage/mac80211/Default)
@@ -471,7 +470,6 @@ define KernelPackage/rtw88-8723x
   FILES:= $(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtw88/rtw88_8723x.ko
   HIDDEN:=1
 endef
-$(eval $(call KernelPackage,rtw88-8723x))
 
 define KernelPackage/rtw89-8852b-common
   $(call KernelPackage/mac80211/Default)
@@ -480,4 +478,3 @@ define KernelPackage/rtw89-8852b-common
   FILES:= $(PKG_BUILD_DIR)/drivers/net/wireless/realtek/rtw89/rtw89_8852b_common.ko
   HIDDEN:=1
 endef
-$(eval $(call KernelPackage,rtw89-8852b-common))
