@@ -129,6 +129,29 @@ jobs:
           bash scripts/xgp-prepare.sh
           df -h
 
+      - name: Preflight mac80211 build command
+        working-directory: lede
+        run: |
+          set -euo pipefail
+          make defconfig
+          dry_run=$(mktemp)
+          trap 'rm -f "$dry_run"' EXIT
+          if ! make -n package/kernel/mac80211/compile V=s >"$dry_run" 2>&1; then
+            cat "$dry_run"
+            exit 1
+          fi
+          if ! grep -Fq 'KLIB_BUILD=' "$dry_run"; then
+            echo 'ERROR: mac80211 dry-run does not pass KLIB_BUILD to backports.' >&2
+            cat "$dry_run"
+            exit 1
+          fi
+          if grep -Eq '/usr/src/linux-headers-[^[:space:]]+' "$dry_run"; then
+            echo 'ERROR: mac80211 dry-run still references host kernel headers.' >&2
+            cat "$dry_run"
+            exit 1
+          fi
+          echo 'mac80211 dry-run contains target KLIB_BUILD and no host header fallback.'
+
       - name: Build
         working-directory: lede
         run: |
