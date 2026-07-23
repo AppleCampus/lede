@@ -126,6 +126,7 @@ define KernelPackage/rtl8192se
 endef
 
 define KernelPackage/rtl8192de
+  DEPENDS+= +kmod-rtl8192d-common
   $(call KernelPackage/mac80211/Default)
   TITLE:=Realtek RTL8192DE/RTL8188DE support
   DEPENDS+= +kmod-rtlwifi-pci +rtl8192de-firmware
