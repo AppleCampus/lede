@@ -43,6 +43,40 @@ else
   echo "Applied XGP RTL8192DE common-module dependency patch."
 fi
 
+rtw88_8723d_block() {
+  sed -n '/^define KernelPackage\/rtw88-8723d$/,/^endef$/p' "$realtek_file"
+}
+
+block=$(rtw88_8723d_block)
+if [[ -z "$block" ]]; then
+  echo "ERROR: upstream rtw88-8723d package definition is missing; patch needs review." >&2
+  exit 1
+elif grep -Eq 'DEPENDS.*\+kmod-rtw88-8723x' <<<"$block"; then
+  echo "RTW88 8723D common-module dependency is already present upstream."
+else
+  sed -i '/^define KernelPackage\/rtw88-8723d$/a\  DEPENDS+= +kmod-rtw88-8723x' "$realtek_file"
+  block=$(rtw88_8723d_block)
+  grep -Eq 'DEPENDS.*\+kmod-rtw88-8723x' <<<"$block"
+  echo "Applied XGP RTW88 8723D common-module dependency patch."
+fi
+
+rtw89_8852be_block() {
+  sed -n '/^define KernelPackage\/rtw89-8852be$/,/^endef$/p' "$realtek_file"
+}
+
+block=$(rtw89_8852be_block)
+if [[ -z "$block" ]]; then
+  echo "ERROR: upstream rtw89-8852be package definition is missing; patch needs review." >&2
+  exit 1
+elif grep -Eq 'DEPENDS.*\+kmod-rtw89-8852b-common' <<<"$block"; then
+  echo "RTW89 8852BE common-module dependency is already present upstream."
+else
+  sed -i '/^define KernelPackage\/rtw89-8852be$/a\  DEPENDS+= +kmod-rtw89-8852b-common' "$realtek_file"
+  block=$(rtw89_8852be_block)
+  grep -Eq 'DEPENDS.*\+kmod-rtw89-8852b-common' <<<"$block"
+  echo "Applied XGP RTW89 8852BE common-module dependency patch."
+fi
+
 if ! grep -q '^define KernelPackage/rtl8192d-common$' "$realtek_file"; then
   cat >>"$realtek_file" <<'EOF'
 
