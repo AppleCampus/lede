@@ -154,10 +154,15 @@ jobs:
           ./scripts/feeds install -a
           ./scripts/feeds install -a -f -p qmodem
           test -f feeds/luci/luci.mk
+          cp xgp.config .config
           make defconfig
 
           if ! grep -Fxq 'CONFIG_PACKAGE_luci-app-alpha-config=y' .config; then
             echo 'ERROR: luci-app-alpha-config is not selected after defconfig.' >&2
+            exit 1
+          fi
+          if ! grep -Fxq 'CONFIG_PACKAGE_luci-theme-alpha=y' .config; then
+            echo 'ERROR: luci-theme-alpha is not selected after defconfig.' >&2
             exit 1
           fi
 
@@ -270,4 +275,3 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
