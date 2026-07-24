@@ -127,6 +127,10 @@ jobs:
         run: |
           set -e
           bash scripts/xgp-prepare.sh
+          alpha_config_file=package/zz/luci-app-alpha-config/Makefile
+          test -f "$alpha_config_file"
+          grep -Fxq 'PKG_NAME:=luci-app-alpha-config' "$alpha_config_file"
+          grep -Fxq 'LUCI_PKGARCH:=all' "$alpha_config_file"
           df -h
 
       - name: Preflight mac80211 package wiring
@@ -135,10 +139,19 @@ jobs:
           set -euo pipefail
           mac80211_file=package/kernel/mac80211/Makefile
           realtek_file=package/kernel/mac80211/realtek.mk
+          alpha_config_file=package/zz/luci-app-alpha-config/Makefile
 
           test -f "$mac80211_file"
           test -f "$realtek_file"
+          test -f "$alpha_config_file"
+          grep -Fxq 'PKG_NAME:=luci-app-alpha-config' "$alpha_config_file"
+          grep -Fxq 'LUCI_PKGARCH:=all' "$alpha_config_file"
           make defconfig
+
+          if ! grep -Fxq 'CONFIG_PACKAGE_luci-app-alpha-config=y' .config; then
+            echo 'ERROR: luci-app-alpha-config is not selected after defconfig.' >&2
+            exit 1
+          fi
 
           if ! grep -Fq 'KLIB_BUILD="$(LINUX_DIR)"' "$mac80211_file"; then
             echo 'ERROR: mac80211 Makefile no longer wires KLIB_BUILD to the target kernel.' >&2
