@@ -146,6 +146,12 @@ jobs:
           test -f "$alpha_config_file"
           grep -Fxq 'PKG_NAME:=luci-app-alpha-config' "$alpha_config_file"
           grep -Fxq 'LUCI_PKGARCH:=all' "$alpha_config_file"
+
+          # Match the build script's feed setup before parsing LuCI packages.
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          ./scripts/feeds install -a -f -p qmodem
+          test -f feeds/luci/luci.mk
           make defconfig
 
           if ! grep -Fxq 'CONFIG_PACKAGE_luci-app-alpha-config=y' .config; then
@@ -262,3 +268,4 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
