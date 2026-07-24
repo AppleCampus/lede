@@ -131,6 +131,8 @@ jobs:
           test -f "$alpha_config_file"
           grep -Fxq 'PKG_NAME:=luci-app-alpha-config' "$alpha_config_file"
           grep -Fxq 'LUCI_PKGARCH:=all' "$alpha_config_file"
+          grep -Fxq 'CONFIG_PACKAGE_luci-app-alpha-config=y' xgp.config
+          grep -Fxq 'CONFIG_PACKAGE_luci-theme-alpha=y' xgp.config
           df -h
 
       - name: Preflight mac80211 package wiring
