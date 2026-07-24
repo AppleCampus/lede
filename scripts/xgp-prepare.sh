@@ -73,6 +73,20 @@ if ! grep -q 'CONFIG_TARGET_rockchip_armv8_DEVICE_nlnet_xiguapi-v3=y' xgp.config
   exit 1
 fi
 
+# Keep the Alpha theme and its configuration app selected after upstream sync.
+ensure_config_package() {
+  local package_option="$1"
+  sed -i "/^# ${package_option} is not set$/d" xgp.config
+  if ! grep -Fxq "${package_option}=y" xgp.config; then
+    printf '%s\n' "${package_option}=y" >> xgp.config
+  fi
+}
+
+ensure_config_package CONFIG_PACKAGE_luci-app-alpha-config
+ensure_config_package CONFIG_PACKAGE_luci-theme-alpha
+grep -Fxq 'CONFIG_PACKAGE_luci-app-alpha-config=y' xgp.config
+grep -Fxq 'CONFIG_PACKAGE_luci-theme-alpha=y' xgp.config
+
 # panfrost on 6.12+ requires drm_shmem_helper.
 if grep -q 'CONFIG_PACKAGE_kmod-drm-panfrost=y' xgp.config; then
   if ! grep -q 'CONFIG_PACKAGE_kmod-drm-shmem-helper=y' xgp.config; then
@@ -81,3 +95,4 @@ if grep -q 'CONFIG_PACKAGE_kmod-drm-panfrost=y' xgp.config; then
 fi
 
 echo "prepare done"
+
